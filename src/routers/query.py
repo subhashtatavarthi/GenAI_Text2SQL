@@ -8,6 +8,7 @@ router = APIRouter(prefix="/api/v1", tags=["query"])
 class QueryRequest(BaseModel):
     question: str
     model_provider: Literal["openai", "gemini"] = Field("openai", description="LLM Provider to use")
+    model_name: Optional[str] = Field(None, description="Specific model to use (e.g. gpt-4o)")
 
 class QueryResponse(BaseModel):
     question: str
@@ -16,6 +17,7 @@ class QueryResponse(BaseModel):
     answer: str | None = None
     error: str | None = None
     provider: str
+    model: str | None = None
 
 @router.post("/query", response_model=QueryResponse)
 async def ask_question(request: QueryRequest):
@@ -23,7 +25,8 @@ async def ask_question(request: QueryRequest):
         # Invoke the graph with question AND model_provider
         result = graph.invoke({
             "question": request.question,
-            "model_provider": request.model_provider
+            "model_provider": request.model_provider,
+            "model_name": request.model_name
         })
         
         return QueryResponse(
@@ -32,7 +35,8 @@ async def ask_question(request: QueryRequest):
             query_result=result.get("query_result"),
             answer=result.get("answer"),
             error=result.get("error"),
-            provider=result.get("model_provider", request.model_provider)
+            provider=result.get("model_provider", request.model_provider),
+            model=request.model_name
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

@@ -5,7 +5,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-def get_llm(provider: str):
+def get_llm(provider: str, model_name: str = None):
     """
     Returns the ChatModel based on the provider string.
     Supported: 'openai', 'gemini'
@@ -13,18 +13,21 @@ def get_llm(provider: str):
     if provider.lower() == "gemini":
         if not settings.GOOGLE_API_KEY:
             raise ValueError("GOOGLE_API_KEY is not set in configuration.")
-        logger.info("Using Google Gemini LLM")
+        
+        model = model_name or "gemini-2.0-flash"
+        logger.info(f"Using Google Gemini LLM: {model}")
         return ChatGoogleGenerativeAI(
-            model="gemini-2.0-flash", # Validated available model
+            model=model,
             google_api_key=settings.GOOGLE_API_KEY,
             temperature=0,
             convert_system_message_to_human=True # Often needed for some Gemini versions
         )
     elif provider.lower() == "openai":
-        logger.info("Using OpenAI GPT-3.5 LLM")
+        model = model_name or "gpt-3.5-turbo"
+        logger.info(f"Using OpenAI LLM: {model}")
         return ChatOpenAI(
             api_key=settings.OPENAI_API_KEY, 
-            model="gpt-3.5-turbo",
+            model=model,
             temperature=0
         )
     else:

@@ -11,4 +11,5 @@ class AgentState(TypedDict):
     answer: Optional[str]
     error: Optional[str]
     model_provider: str = "openai"
+    model_name: Optional[str] = None
     iterations: int = 0

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import ReactMarkdown from 'react-markdown' // Should have instealled this, but for now just raw text or pre
 
-function ChatInterface({ llmProvider, serverUrl }) {
+function ChatInterface({ llmProvider, llmModel }) {
     const [messages, setMessages] = useState([
         { role: 'assistant', text: 'Hello! Ask me any question about your data.' }
     ])
@@ -24,15 +24,16 @@ function ChatInterface({ llmProvider, serverUrl }) {
         setIsLoading(true)
 
         try {
-            const baseUrl = serverUrl.replace(/\/$/, '') || ''
-            const res = await fetch(`${baseUrl}/api/v1/query`, {
+            const res = await fetch('/api/v1/query', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     question: userMessage.text,
-                    model_provider: llmProvider
+                    model_provider: llmProvider,
+                    model_name: llmModel
                 })
             })
+
 
             if (!res.ok) {
                 throw new Error('Failed to fetch response')

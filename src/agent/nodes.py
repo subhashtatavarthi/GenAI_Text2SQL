@@ -18,8 +18,9 @@ def write_query(state: AgentState) -> AgentState:
     
     # 1. Get LLM based on provider in state (default to openai if missing)
     provider = state.get("model_provider", "openai")
+    model_name = state.get("model_name")
     try:
-        llm = get_llm(provider)
+        llm = get_llm(provider, model_name)
     except ValueError as e:
         return {"error": str(e)}
 
@@ -83,8 +84,9 @@ def generate_answer(state: AgentState) -> AgentState:
         
     # Get LLM based on provider
     provider = state.get("model_provider", "openai")
+    model_name = state.get("model_name")
     try:
-        llm = get_llm(provider)
+        llm = get_llm(provider, model_name)
     except ValueError as e:
         return {"error": str(e), "answer": "Configuration Error"}
 
