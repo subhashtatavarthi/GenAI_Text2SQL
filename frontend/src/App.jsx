@@ -9,10 +9,12 @@ function App() {
   const [schema, setSchema] = useState(null)
   const [activeTab, setActiveTab] = useState('schema') // schema | chat
   const [isConnected, setIsConnected] = useState(false)
+  const [serverUrl, setServerUrl] = useState('')
 
-  const handleConnect = (config, fetchedSchema) => {
+  const handleConnect = (config, fetchedSchema, url) => {
     setDbConfig(config)
     setSchema(fetchedSchema)
+    setServerUrl(url)
     setIsConnected(true)
     setActiveTab('schema')
   }

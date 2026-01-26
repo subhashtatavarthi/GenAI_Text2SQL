@@ -5,6 +5,9 @@ function ConnectionPanel({ onConnect, setLlmProvider, currentLlm }) {
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState('')
 
+    // Server config (Allow custom backend URL for deployed frontend)
+    const [serverUrl, setServerUrl] = useState('')
+
     // Form State
     const [sqlitePath, setSqlitePath] = useState('sales.db')
     const [pgHost, setPgHost] = useState('localhost')
@@ -16,6 +19,9 @@ function ConnectionPanel({ onConnect, setLlmProvider, currentLlm }) {
     const handleConnect = async () => {
         setIsLoading(true)
         setError('')
+
+        // Determine base URL (if empty, use default relative path which uses proxy)
+        const baseUrl = serverUrl.replace(/\/$/, '') || ''
 
         const payload = {
             type: dbType,
@@ -35,7 +41,7 @@ function ConnectionPanel({ onConnect, setLlmProvider, currentLlm }) {
         }
 
         try {
-            const res = await fetch('/api/v1/get-schema', {
+            const res = await fetch(`${baseUrl}/api/v1/get-schema`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -47,7 +53,8 @@ function ConnectionPanel({ onConnect, setLlmProvider, currentLlm }) {
             }
 
             const data = await res.json()
-            onConnect(payload, data)
+            // Pass the URL to parent so ChatInterface can use it too
+            onConnect(payload, data, baseUrl)
 
         } catch (e) {
             setError(e.message)
@@ -58,6 +65,19 @@ function ConnectionPanel({ onConnect, setLlmProvider, currentLlm }) {
 
     return (
         <div className="connection-panel">
+            <div className="form-group" style={{ marginBottom: '16px' }}>
+                <label>Backend API URL</label>
+                <input
+                    type="text"
+                    placeholder="Leave empty for localhost..."
+                    value={serverUrl}
+                    onChange={(e) => setServerUrl(e.target.value)}
+                    style={{ fontSize: '0.85rem' }}
+                />
+                <small style={{ color: 'var(--text-secondary)', fontSize: '0.7rem' }}>
+                    Required if using GitHub Pages (e.g. ngrok or cloud URL)
+                </small>
+            </div>
             <div className="form-group">
                 <label>LLM Provider</label>
                 <select value={currentLlm} onChange={(e) => setLlmProvider(e.target.value)}>
