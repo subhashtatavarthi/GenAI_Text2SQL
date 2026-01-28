@@ -2,13 +2,14 @@ import { useState } from 'react'
 import ConnectionPanel from './components/ConnectionPanel'
 import SchemaViewer from './components/SchemaViewer'
 import ChatInterface from './components/ChatInterface'
+import TablesManager from './components/TablesManager'
 
 function App() {
   const [dbConfig, setDbConfig] = useState(null)
   const [llmProvider, setLlmProvider] = useState('openai')
   const [llmModel, setLlmModel] = useState('gpt-3.5-turbo')
   const [schema, setSchema] = useState(null)
-  const [activeTab, setActiveTab] = useState('onboarding') // onboarding | schema | chat
+  const [activeTab, setActiveTab] = useState('onboarding') // onboarding | schema | chat | tables
   const [isConnected, setIsConnected] = useState(false)
 
   const handleConnect = (config, fetchedSchema) => {
@@ -29,6 +30,13 @@ function App() {
             onClick={() => setActiveTab('onboarding')}
           >
             🚀 Onboarding
+          </button>
+
+          <button
+            className={`nav-item ${activeTab === 'tables' ? 'active' : ''}`}
+            onClick={() => setActiveTab('tables')}
+          >
+            📚 Data Dictionary
           </button>
 
           {isConnected && (
@@ -69,6 +77,8 @@ function App() {
             />
           </div>
         )}
+
+        {activeTab === 'tables' && <TablesManager />}
 
         {isConnected && (
           <>

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 from src.agent.graph import graph
-from typing import Literal
+from typing import Literal, Optional
 
 router = APIRouter(prefix="/api/v1", tags=["query"])
 

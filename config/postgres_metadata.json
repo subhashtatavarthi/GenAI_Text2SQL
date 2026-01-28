@@ -1,0 +1,57 @@
+{
+    "c67ceb5f-c5b6-43f6-af1c-4b4248302195": {
+        "description": "This table deals with Sales Information which has sales amount and sliced by product , year and so on....",
+        "columns": [
+            {
+                "name": "id",
+                "type": "INTEGER",
+                "description": "This is surrogate key"
+            },
+            {
+                "name": "org_name",
+                "type": "VARCHAR(100)",
+                "description": "Deals with Organization Name"
+            },
+            {
+                "name": "product_name",
+                "type": "VARCHAR(100)",
+                "description": "Product Names"
+            },
+            {
+                "name": "sales_amount",
+                "type": "NUMERIC(15, 2)",
+                "description": "Sales Amount"
+            },
+            {
+                "name": "quantity",
+                "type": "INTEGER",
+                "description": "Quantity"
+            },
+            {
+                "name": "sale_date",
+                "type": "DATE",
+                "description": "Date when Sale Occured"
+            },
+            {
+                "name": "year",
+                "type": "INTEGER",
+                "description": "Year of Sales"
+            },
+            {
+                "name": "quarter",
+                "type": "VARCHAR(10)",
+                "description": "Quarter"
+            },
+            {
+                "name": "month",
+                "type": "VARCHAR(20)",
+                "description": "Month"
+            },
+            {
+                "name": "region",
+                "type": "VARCHAR(50)",
+                "description": "Region"
+            }
+        ]
+    }
+}

@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException
 from src.models.schema_models import SchemaRequest, SchemaResponse, TableSchema, ColumnInfo
 from sqlalchemy import create_engine, inspect, text
 from urllib.parse import quote_plus
+import os
 import logging
 
 router = APIRouter(prefix="/api/v1", tags=["schema"])
@@ -32,16 +33,66 @@ async def get_schema(payload: SchemaRequest):
                 
         elif payload.type == "postgres":
             d = payload.details
-            if not all([d.host, d.username, d.password, d.database]):
-                raise HTTPException(status_code=400, detail="Missing required Postgres details (host, user, pass, db)")
+            # Load Centralized Config (Text File)
+            import configparser
             
+            config = configparser.ConfigParser()
+            # Path: project_root/config/postgres.config
+            # __file__ is src/routers/schema.py
+            # dirname(__file__) is src/routers
+            # dirname(dirname(__file__)) is src
+            # dirname(dirname(dirname(__file__))) is project_root
+            project_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+            config_path = os.path.join(project_root, "config", "postgres.config")
+            
+            # Default values
+            conf_host = "localhost"
+            conf_port = "5432"
+            conf_user = "postgres"
+            conf_pass = os.getenv("POSTGRES_PASSWORD")
+            
+            # Optional: Legacy Config Overrides
+            if os.path.exists(config_path):
+                try:
+                    config.read(config_path)
+                    logger.info(f"Loaded config from {config_path}")
+                    if "postgres" in config:
+                        pg_conf = config["postgres"]
+                        conf_host = pg_conf.get("host", conf_host)
+                        conf_port = pg_conf.get("port", conf_port)
+                        conf_user = pg_conf.get("user", conf_user)
+                        raw_pass = pg_conf.get("password")
+                        
+                        if raw_pass:
+                            if raw_pass.startswith("ENV:"):
+                                env_var = raw_pass.split("ENV:")[1]
+                                conf_pass = os.getenv(env_var)
+                                logger.info(f"Resolved password from ENV:{env_var}: {'FOUND' if conf_pass else 'MISSING'}")
+                            else:
+                                conf_pass = raw_pass
+                except Exception as e:
+                    logger.warning(f"Error reading config file: {e}")
+            else:
+                 logger.info("No postgres.config found, using defaults and environment variables.")
+            
+            # Use Config values if payload values are missing/empty
+            host = d.host or conf_host
+            port = d.port or int(conf_port)
+            user_name = d.username or conf_user
+            password_val = d.password or conf_pass
+            dbname = d.database
+            
+            if not all([host, user_name, password_val, dbname]):
+                raise HTTPException(status_code=400, detail=f"Missing required Postgres details (User: {user_name}, Host: {host}). Ensure 'postgres.config' is set correctly.")
+
             # Safe URL construction
             # postgresql+psycopg2://user:pass@host:port/dbname
-            user = quote_plus(d.username)
-            password = quote_plus(d.password)
-            host = d.host
-            port = d.port
-            dbname = d.database
+            if password_val is None:
+                raise HTTPException(status_code=400, detail="Postgres password not found. Ensure POSTGRES_PASSWORD is set in .env or config.")
+                
+            user = quote_plus(user_name)
+            password = quote_plus(password_val)
+            
             connection_url = f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{dbname}"
             
         else:
@@ -54,7 +105,11 @@ async def get_schema(payload: SchemaRequest):
 
     # 2. Connect and Reflect
     try:
-        engine = create_engine(connection_url)
+        connect_args = {}
+        if payload.type == "postgres":
+             connect_args = {"connect_timeout": 5}
+             
+        engine = create_engine(connection_url, connect_args=connect_args)
         inspector = inspect(engine)
         
         target_tables = []

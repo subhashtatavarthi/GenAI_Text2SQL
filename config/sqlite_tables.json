@@ -1,0 +1,11 @@
+{
+    "instances": [
+        {
+            "table_id": "b36de27d-940b-49f1-9dad-02aa50cf9521",
+            "type": "sqlite",
+            "file_path": "sales.db",
+            "table_name": "sales.db",
+            "hash_key": "d2195cccc502d6bc0db1bbcea775ee752c7d1baf2c28b1a581b248652a8f0523"
+        }
+    ]
+}

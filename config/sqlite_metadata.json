@@ -1,0 +1,57 @@
+{
+    "b36de27d-940b-49f1-9dad-02aa50cf9521": {
+        "description": "Imported from sqlite",
+        "columns": [
+            {
+                "name": "id",
+                "type": "INTEGER",
+                "description": ""
+            },
+            {
+                "name": "org_name",
+                "type": "TEXT",
+                "description": ""
+            },
+            {
+                "name": "product_name",
+                "type": "TEXT",
+                "description": ""
+            },
+            {
+                "name": "sales_amount",
+                "type": "REAL",
+                "description": ""
+            },
+            {
+                "name": "quantity",
+                "type": "INTEGER",
+                "description": ""
+            },
+            {
+                "name": "sale_date",
+                "type": "DATE",
+                "description": ""
+            },
+            {
+                "name": "year",
+                "type": "INTEGER",
+                "description": ""
+            },
+            {
+                "name": "quarter",
+                "type": "TEXT",
+                "description": ""
+            },
+            {
+                "name": "month",
+                "type": "TEXT",
+                "description": ""
+            },
+            {
+                "name": "region",
+                "type": "TEXT",
+                "description": ""
+            }
+        ]
+    }
+}

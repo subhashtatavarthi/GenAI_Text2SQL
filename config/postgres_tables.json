@@ -1,0 +1,20 @@
+{
+    "postgres_instances": [
+        {
+            "table_id": "c67ceb5f-c5b6-43f6-af1c-4b4248302195",
+            "postgress_user": "postgres",
+            "postgress_password": "ENV:POSTGRES_PASSWORD",
+            "postgress_hostname": "localhost",
+            "postgress_port": "5432",
+            "postgress_database": "sales_db",
+            "postgress_table": "sales_data",
+            "postgress_hash_key": "d7ba526877031a2264b675ff3365232c3895a9c411cd0cfe52d0939810a5779d"
+        }
+    ],
+    "postgres_passwords": [
+        {
+            "postgress_hostname": "localhost",
+            "postgress_password": "ENV:POSTGRES_PASSWORD"
+        }
+    ]
+}

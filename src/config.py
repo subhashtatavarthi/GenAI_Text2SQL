@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     # API Keys
     OPENAI_API_KEY: str
     GOOGLE_API_KEY: str | None = None
+    POSTGRES_PASSWORD: str | None = None
     
     # Database - Pointing to the new sales.db
     DATABASE_URL: str = "sqlite:///./sales.db"

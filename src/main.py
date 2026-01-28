@@ -1,9 +1,13 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from src.config import settings
-from src.routers import schema, query # We restore query router too if user wants to use agent later
+from src.routers import schema, query, onboarding, tables
 from contextlib import asynccontextmanager
 import logging
+from dotenv import load_dotenv
+
+# Load env vars
+load_dotenv()
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -39,6 +43,8 @@ app.add_middleware(
 # Include Routers
 app.include_router(schema.router)
 app.include_router(query.router)
+app.include_router(onboarding.router)
+app.include_router(tables.router)
 
 @app.get("/health")
 def health_check():

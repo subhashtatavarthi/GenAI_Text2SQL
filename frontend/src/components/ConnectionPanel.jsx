@@ -1,9 +1,12 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 function ConnectionPanel({ onConnect, setLlmProvider, currentLlm, setLlmModel, currentModel }) {
     const [dbType, setDbType] = useState(null)
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState('')
+    const [isTestSuccessful, setIsTestSuccessful] = useState(false)
+    const [connectionData, setConnectionData] = useState(null)
+    const [testMessage, setTestMessage] = useState('')
 
     // Model Options
     const modelOptions = {
@@ -20,16 +23,24 @@ function ConnectionPanel({ onConnect, setLlmProvider, currentLlm, setLlmModel, c
     }
 
     // Form State
-    const [sqlitePath, setSqlitePath] = useState('sales.db')
-    const [pgHost, setPgHost] = useState('localhost')
-    const [pgPort, setPgPort] = useState(5432)
-    const [pgUser, setPgUser] = useState('postgres')
-    const [pgPass, setPgPass] = useState('password')
-    const [pgDb, setPgDb] = useState('sales_db')
+    const [sqlitePath, setSqlitePath] = useState('')
+    const [pgHost, setPgHost] = useState('')
+    const [pgPort, setPgPort] = useState('')
+    const [pgDb, setPgDb] = useState('')
+    const [pgTable, setPgTable] = useState('')
 
-    const handleConnect = async () => {
+    // Reset test status when inputs change
+    useEffect(() => {
+        setIsTestSuccessful(false)
+        setConnectionData(null)
+        setError('')
+        setTestMessage('')
+    }, [sqlitePath, pgHost, pgPort, pgDb, pgTable, dbType])
+
+    const handleTestConnection = async () => {
         setIsLoading(true)
         setError('')
+        setTestMessage('')
 
         const payload = {
             type: dbType,
@@ -40,11 +51,11 @@ function ConnectionPanel({ onConnect, setLlmProvider, currentLlm, setLlmModel, c
             payload.details = { file_path: sqlitePath }
         } else {
             payload.details = {
-                host: pgHost,
-                port: Number(pgPort),
-                username: pgUser,
-                password: pgPass,
-                database: pgDb
+                // user, password handled by backend config
+                host: pgHost || undefined,
+                port: Number(pgPort) || undefined,
+                database: pgDb,
+                table_name: pgTable
             }
         }
 
@@ -56,19 +67,109 @@ function ConnectionPanel({ onConnect, setLlmProvider, currentLlm, setLlmModel, c
             })
 
             if (!res.ok) {
-                const err = await res.json()
-                throw new Error(err.detail || 'Failed to connect')
+                const errorText = await res.text();
+                let errorMsg = 'Failed to connect';
+                try {
+                    const err = JSON.parse(errorText);
+                    errorMsg = err.detail || 'Unknown backend error';
+                } catch (e) {
+                    errorMsg = errorText || `HTTP Error ${res.status}`;
+                }
+                throw new Error(errorMsg);
             }
 
             const data = await res.json()
-            // Pass the URL to parent so ChatInterface can use it too
-            onConnect(payload, data)
+
+            // Success! Store data for submit
+            setConnectionData({ payload, data })
+            setIsTestSuccessful(true)
+            setTestMessage('✅ Connection Successful! You can now submit.')
 
         } catch (e) {
-            setError(e.message)
+            setError(`Test Connection Failed: ${e.message}`)
+            setIsTestSuccessful(false)
         } finally {
             setIsLoading(false)
         }
+    }
+
+    const [isOnboarded, setIsOnboarded] = useState(false)
+    const [onboardedTables, setOnboardedTables] = useState([])
+
+    const handleSubmit = async () => {
+        if (!connectionData || !isTestSuccessful) return;
+
+        let onboardingPayload = {}
+
+        if (dbType === 'sqlite') {
+            onboardingPayload = {
+                type: 'sqlite',
+                file_path: sqlitePath,
+                table_name: sqlitePath
+            }
+        } else {
+            // Postgres
+            onboardingPayload = {
+                type: 'postgres',
+                host: pgHost || "localhost",
+                port: Number(pgPort) || 5432,
+                database: pgDb,
+                table_name: pgTable,
+                // User/Pass are handled by backend defaults
+            }
+        }
+
+        try {
+            setIsLoading(true)
+            const res = await fetch('/api/v1/onboard-table', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(onboardingPayload)
+            })
+
+            if (!res.ok) {
+                const err = await res.json()
+                throw new Error(err.detail || 'Failed to onboard table')
+            }
+
+            const data = await res.json()
+
+            // Success
+            setIsOnboarded(true)
+            setOnboardedTables(prev => [...prev, { ...onboardingPayload, ...data }])
+            onConnect(connectionData.payload, connectionData.data) // Keep original parent callback
+
+        } catch (e) {
+            setError(`Onboarding Failed: ${e.message}`)
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    if (isOnboarded) {
+        return (
+            <div className="connection-panel card" style={{ padding: '32px', maxWidth: '800px', margin: '0 auto', textAlign: 'center' }}>
+                <h2 style={{ fontSize: '1.5rem', marginBottom: '24px' }}>✅ Table Onboarded!</h2>
+                <div style={{ textAlign: 'left', background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '8px' }}>
+                    <h4 style={{ marginBottom: '12px' }}>Registered Tables</h4>
+                    {onboardedTables.map((tbl, idx) => (
+                        <div key={idx} style={{ padding: '8px', borderBottom: '1px solid var(--border-color)' }}>
+                            <strong>{tbl.table_name}</strong> <span style={{ color: 'var(--text-secondary)' }}>({tbl.database})</span>
+                        </div>
+                    ))}
+                </div>
+                <p style={{ marginTop: '24px', color: 'var(--text-secondary)' }}>
+                    You can now proceed to query this table. (Feature coming soon)
+                </p>
+                <button
+                    className="btn-secondary"
+                    onClick={() => setIsOnboarded(false)}
+                    style={{ marginTop: '16px' }}
+                >
+                    Add Another Table
+                </button>
+            </div>
+        )
     }
 
     return (
@@ -145,44 +246,92 @@ function ConnectionPanel({ onConnect, setLlmProvider, currentLlm, setLlmModel, c
                     )}
 
                     {dbType === 'postgres' && (
-                        <div className="pg-form" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                            <div className="form-group">
-                                <label>Host</label>
-                                <input type="text" value={pgHost} onChange={(e) => setPgHost(e.target.value)} />
+                        <div className="pg-form" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                            {/* Row 1: Host and Port */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                                <div className="form-group">
+                                    <label>Host</label>
+                                    <input
+                                        type="text"
+                                        value={pgHost}
+                                        onChange={(e) => setPgHost(e.target.value)}
+                                        placeholder="e.g. localhost"
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label>Port</label>
+                                    <input
+                                        type="number"
+                                        value={pgPort}
+                                        onChange={(e) => setPgPort(e.target.value)}
+                                        placeholder="5432"
+                                    />
+                                </div>
                             </div>
-                            <div className="form-group">
-                                <label>Port</label>
-                                <input type="number" value={pgPort} onChange={(e) => setPgPort(e.target.value)} />
-                            </div>
-                            <div className="form-group" style={{ gridColumn: 'span 2' }}>
-                                <label>Database Name</label>
-                                <input type="text" value={pgDb} onChange={(e) => setPgDb(e.target.value)} />
-                            </div>
-                            <div className="form-group">
-                                <label>User</label>
-                                <input type="text" value={pgUser} onChange={(e) => setPgUser(e.target.value)} />
-                            </div>
-                            <div className="form-group">
-                                <label>Password</label>
-                                <input type="password" value={pgPass} onChange={(e) => setPgPass(e.target.value)} />
+
+                            {/* Row 2: Database and Table */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                                <div className="form-group">
+                                    <label>Database Name</label>
+                                    <input
+                                        type="text"
+                                        value={pgDb}
+                                        onChange={(e) => setPgDb(e.target.value)}
+                                        placeholder="e.g. sales_db"
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label>Table Name</label>
+                                    <input
+                                        type="text"
+                                        value={pgTable}
+                                        onChange={(e) => setPgTable(e.target.value)}
+                                        placeholder="e.g. sales_data"
+                                    />
+                                </div>
                             </div>
                         </div>
                     )}
 
+                    {/* Status Messages */}
                     {error && (
                         <div style={{ color: '#ef4444', fontSize: '0.9rem', marginTop: '24px', padding: '12px', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                             ⚠️ <span>{error}</span>
                         </div>
                     )}
 
-                    <button
-                        className="btn-primary"
-                        style={{ marginTop: '32px', width: '100%', padding: '16px', fontSize: '1rem' }}
-                        onClick={handleConnect}
-                        disabled={isLoading}
-                    >
-                        {isLoading ? 'Connecting...' : 'Connect and Continue →'}
-                    </button>
+                    {testMessage && (
+                        <div style={{ color: '#10b981', fontSize: '0.9rem', marginTop: '24px', padding: '12px', background: 'rgba(16, 185, 129, 0.1)', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span>{testMessage}</span>
+                        </div>
+                    )}
+
+                    {/* Action Buttons */}
+                    <div style={{ display: 'flex', gap: '16px', marginTop: '32px' }}>
+                        <button
+                            className="btn-secondary"
+                            style={{ flex: 1, padding: '16px', fontSize: '1rem', background: 'var(--card-bg)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
+                            onClick={handleTestConnection}
+                            disabled={isLoading}
+                        >
+                            {isLoading ? 'Testing...' : 'Test Connection'}
+                        </button>
+
+                        <button
+                            className="btn-primary"
+                            style={{
+                                flex: 1,
+                                padding: '16px',
+                                fontSize: '1rem',
+                                opacity: isTestSuccessful ? 1 : 0.5,
+                                cursor: isTestSuccessful ? 'pointer' : 'not-allowed'
+                            }}
+                            onClick={handleSubmit}
+                            disabled={!isTestSuccessful || isLoading}
+                        >
+                            Submit
+                        </button>
+                    </div>
                 </div>
             )}
         </div>
