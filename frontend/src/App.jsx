@@ -4,6 +4,20 @@ import SchemaViewer from './components/SchemaViewer'
 import ChatInterface from './components/ChatInterface'
 import TablesManager from './components/TablesManager'
 
+const modelOptions = {
+  openai: [
+    { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo' },
+    { id: 'gpt-4o', name: 'GPT-4o' },
+    { id: 'gpt-4o-mini', name: 'GPT-4o Mini' },
+    { id: 'o1-mini', name: 'o1-mini' }
+  ],
+  gemini: [
+    { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash' },
+    { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro' },
+    { id: 'gemini-flash-latest', name: 'Gemini Flash Latest' }
+  ]
+}
+
 function App() {
   const [dbConfig, setDbConfig] = useState(null)
   const [llmProvider, setLlmProvider] = useState('openai')
@@ -12,11 +26,18 @@ function App() {
   const [activeTab, setActiveTab] = useState('onboarding') // onboarding | schema | chat | tables
   const [isConnected, setIsConnected] = useState(false)
 
+  const [chatContext, setChatContext] = useState(null)
+
   const handleConnect = (config, fetchedSchema) => {
     setDbConfig(config)
     setSchema(fetchedSchema)
     setIsConnected(true)
     setActiveTab('schema')
+  }
+
+  const handleStartChat = (table) => {
+    setChatContext({ table_name: table.name, ...table })
+    setActiveTab('chat')
   }
 
   return (
@@ -63,6 +84,35 @@ function App() {
             <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{dbConfig.type}</div>
           </div>
         )}
+
+        {/* Model Settings Selector */}
+        <div className="model-settings" style={{ marginTop: isConnected ? '10px' : 'auto', paddingTop: '10px', borderTop: '1px solid var(--border-color)' }}>
+          <label style={{ fontSize: '0.8rem', marginBottom: '8px', display: 'block', color: 'var(--text-secondary)' }}>Model Provider</label>
+          <select
+            value={llmProvider}
+            onChange={(e) => {
+              const newProvider = e.target.value;
+              setLlmProvider(newProvider);
+              // Auto-select first model for this provider
+              setLlmModel(modelOptions[newProvider][0].id);
+            }}
+            style={{ width: '100%', marginBottom: '10px', fontSize: '0.85rem' }}
+          >
+            <option value="openai">OpenAI</option>
+            <option value="gemini">Google Gemini</option>
+          </select>
+
+          <label style={{ fontSize: '0.8rem', marginBottom: '8px', display: 'block', color: 'var(--text-secondary)' }}>Model</label>
+          <select
+            value={llmModel}
+            onChange={(e) => setLlmModel(e.target.value)}
+            style={{ width: '100%', fontSize: '0.85rem' }}
+          >
+            {modelOptions[llmProvider].map(m => (
+              <option key={m.id} value={m.id}>{m.name}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div className="main-content">
@@ -70,21 +120,20 @@ function App() {
           <div className="onboarding-container" style={{ maxWidth: '800px', margin: '0 auto', width: '100%' }}>
             <ConnectionPanel
               onConnect={handleConnect}
-              setLlmProvider={setLlmProvider}
-              currentLlm={llmProvider}
-              setLlmModel={setLlmModel}
-              currentModel={llmModel}
             />
           </div>
         )}
 
-        {activeTab === 'tables' && <TablesManager />}
+        {activeTab === 'tables' && <TablesManager onStartChat={handleStartChat} />}
 
-        {isConnected && (
-          <>
-            {activeTab === 'schema' && <SchemaViewer schema={schema} />}
-            {activeTab === 'chat' && <ChatInterface llmProvider={llmProvider} llmModel={llmModel} />}
-          </>
+        {activeTab === 'schema' && isConnected && <SchemaViewer schema={schema} />}
+
+        {activeTab === 'chat' && (
+          <ChatInterface
+            llmProvider={llmProvider}
+            llmModel={llmModel}
+            initialContext={chatContext}
+          />
         )}
       </div>
     </div>

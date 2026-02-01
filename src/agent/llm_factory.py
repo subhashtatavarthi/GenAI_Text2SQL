@@ -14,7 +14,7 @@ def get_llm(provider: str, model_name: str = None):
         if not settings.GOOGLE_API_KEY:
             raise ValueError("GOOGLE_API_KEY is not set in configuration.")
         
-        model = model_name or "gemini-2.0-flash"
+        model = model_name or "gemini-2.5-flash"
         logger.info(f"Using Google Gemini LLM: {model}")
         return ChatGoogleGenerativeAI(
             model=model,

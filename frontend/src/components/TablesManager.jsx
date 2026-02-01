@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react'
 
-const TablesManager = () => {
+const TablesManager = ({ onStartChat }) => {
     const [tables, setTables] = useState([])
     const [selectedTable, setSelectedTable] = useState(null)
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState(null)
 
     // Metadata Edit State
+
     const [desc, setDesc] = useState("")
     const [columns, setColumns] = useState([])
+    const [promptLogic, setPromptLogic] = useState("")
     const [isSaving, setIsSaving] = useState(false)
     const [successMsg, setSuccessMsg] = useState("")
 
@@ -74,6 +76,15 @@ const TablesManager = () => {
                 // Providing a "Sync Schema" button would be the best next step.
                 setColumns([])
             }
+
+            // 2. Get Saved Prompt Config
+            const promptRes = await fetch(`/api/v1/tables/${table.table_id}/prompt`)
+            if (promptRes.ok) {
+                const promptData = await promptRes.json()
+                setPromptLogic(promptData.Prompt || "")
+            } else {
+                setPromptLogic("")
+            }
         } catch (e) {
             console.error(e)
         } finally {
@@ -98,6 +109,20 @@ const TablesManager = () => {
                 body: JSON.stringify(payload)
             })
             if (!res.ok) throw new Error("Failed to save")
+
+            // Save Prompt Config
+            const promptPayload = {
+                table_id: selectedTable.table_id,
+                table_name: selectedTable.name,
+                database_type: selectedTable.type,
+                Prompt: promptLogic
+            }
+            await fetch(`/api/v1/tables/${selectedTable.table_id}/prompt`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(promptPayload)
+            })
+
             setSuccessMsg("Changes saved successfully! ✅")
 
             // Update local list
@@ -171,6 +196,13 @@ const TablesManager = () => {
                             >
                                 {isSaving ? 'Saving...' : 'Save Changes'}
                             </button>
+                            <button
+                                onClick={() => onStartChat(selectedTable)}
+                                className="btn-secondary"
+                                style={{ marginLeft: '10px' }}
+                            >
+                                💬 Chat with Table
+                            </button>
                         </div>
                         {successMsg && <div style={{ marginBottom: '15px', color: '#10b981' }}>{successMsg}</div>}
 
@@ -192,9 +224,10 @@ const TablesManager = () => {
                             />
                         </div>
 
+
+
                         <div>
                             <h3 style={{ marginBottom: '15px' }}>Columns (Metadata Only)</h3>
-                            {/* Future: Sync with Schema */}
                             {columns.length > 0 ? (
                                 <div style={{ overflowX: 'auto' }}>
                                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
@@ -244,6 +277,30 @@ const TablesManager = () => {
                                 </p>
                             )}
                         </div>
+
+                        <div style={{ marginTop: '30px', paddingTop: '20px', borderTop: '1px solid var(--border-color)' }}>
+                            <h3 style={{ marginBottom: '10px' }}>🧠 Business Logic / Prompting</h3>
+                            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '10px' }}>
+                                Define functional logic or specific prompting instructions for this table.
+                            </p>
+                            <textarea
+                                value={promptLogic}
+                                onChange={(e) => setPromptLogic(e.target.value)}
+                                placeholder="Enter specific business rules or prompt instructions here..."
+                                style={{
+                                    width: '100%',
+                                    height: '150px',
+                                    padding: '12px',
+                                    borderRadius: '8px',
+                                    background: '#1e293b',
+                                    border: '1px solid var(--border-color)',
+                                    color: 'white',
+                                    fontFamily: 'monospace'
+                                }}
+                            />
+                        </div>
+
+
                     </div>
                 ) : (
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-secondary)' }}>
@@ -251,6 +308,7 @@ const TablesManager = () => {
                     </div>
                 )}
             </div>
+
         </div>
     )
 }

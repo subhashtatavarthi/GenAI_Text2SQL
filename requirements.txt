@@ -10,3 +10,8 @@ sqlalchemy
 python-dotenv
 tabulate
 psycopg2-binary
+transformers
+torch
+python-dotenv
+aiosqlite
+greenlet

@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from src.config import settings
-from src.routers import schema, query, onboarding, tables
+from src.routers import schema, query, onboarding, tables, qna
 from contextlib import asynccontextmanager
 import logging
 from dotenv import load_dotenv
@@ -45,6 +45,7 @@ app.include_router(schema.router)
 app.include_router(query.router)
 app.include_router(onboarding.router)
 app.include_router(tables.router)
+app.include_router(qna.router)
 
 @app.get("/health")
 def health_check():

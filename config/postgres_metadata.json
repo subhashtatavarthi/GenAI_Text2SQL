@@ -20,7 +20,7 @@
             {
                 "name": "sales_amount",
                 "type": "NUMERIC(15, 2)",
-                "description": "Sales Amount"
+                "description": "Sales Amount (also known as GTV or Gross Transaction Value)"
             },
             {
                 "name": "quantity",

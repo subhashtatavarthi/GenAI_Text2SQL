@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 
-function ConnectionPanel({ onConnect, setLlmProvider, currentLlm, setLlmModel, currentModel }) {
+function ConnectionPanel({ onConnect }) {
     const [dbType, setDbType] = useState(null)
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState('')
@@ -8,19 +8,8 @@ function ConnectionPanel({ onConnect, setLlmProvider, currentLlm, setLlmModel, c
     const [connectionData, setConnectionData] = useState(null)
     const [testMessage, setTestMessage] = useState('')
 
-    // Model Options
-    const modelOptions = {
-        openai: [
-            { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo' },
-            { id: 'gpt-4o', name: 'GPT-4o' },
-            { id: 'gpt-4o-mini', name: 'GPT-4o Mini' },
-            { id: 'o1-mini', name: 'o1-mini' }
-        ],
-        gemini: [
-            { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash' },
-            { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro' }
-        ]
-    }
+    // Model Options - Handled in App.jsx now
+    // Form State
 
     // Form State
     const [sqlitePath, setSqlitePath] = useState('')

@@ -13,6 +13,27 @@ POSTGRES_REGISTRY = os.path.join(PROJECT_ROOT, "config", "postgres_tables.json")
 SQLITE_REGISTRY = os.path.join(PROJECT_ROOT, "config", "sqlite_tables.json")
 POSTGRES_META = os.path.join(PROJECT_ROOT, "config", "postgres_metadata.json")
 SQLITE_META = os.path.join(PROJECT_ROOT, "config", "sqlite_metadata.json")
+PROMPT_CONFIG = os.path.join(PROJECT_ROOT, "config", "prompt.config")
+
+class PromptConfigRequest(BaseModel):
+    table_id: str
+    table_name: str
+    database_type: str
+    Prompt: str
+
+@router.get("/tables/{table_id}/prompt")
+async def get_table_prompt(table_id: str):
+    data = load_json(PROMPT_CONFIG)
+    if table_id in data:
+        return data[table_id]
+    return {"table_id": table_id, "Prompt": ""}
+
+@router.post("/tables/{table_id}/prompt")
+async def save_table_prompt(table_id: str, payload: PromptConfigRequest):
+    data = load_json(PROMPT_CONFIG)
+    data[table_id] = payload.dict()
+    save_json(PROMPT_CONFIG, data)
+    return {"status": "success", "message": "Prompt configuration saved"}
 
 class TableSummary(BaseModel):
     table_id: str
